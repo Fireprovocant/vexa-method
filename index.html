@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vexa Method</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabeçalho fixo com abas Início/Converter; Início = hero + demonstração de quadros + etapas + dúvidas; Converter = área de envio, palco original x saída, controles por estado. Tema escuro monocromático. */
+:root {
+  --bg: #0a0a0a;
+  --s1: #111111;
+  --s2: #171717;
+  --s3: #1f1f1f;
+  --line: #262626;
+  --line-2: #363636;
+  --text: #f4f4f4;
+  --mute: #8f8f8f;
+  --dim: #5f5f5f;
+  --white: #ffffff;
+  --err: #ff7a7a;
+  --ok: #8be0a4;
+  --font: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 40; }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.03em; line-height: 1.05; }
+p { margin: 0; }
+button { font-family: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--white); outline-offset: 3px; border-radius: 8px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+.mono { font-family: var(--mono); }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
+
+/* cabeçalho */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); background: rgba(10, 10, 10, 0.82); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1080px; margin: 0 auto; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; letter-spacing: -0.02em; font-size: 18px; }
+.logo .dim { color: var(--mute); font-weight: 500; }
+.logo-mark { width: 24px; height: 24px; border-radius: 7px; background: var(--white); position: relative; flex: none; }
+.logo-mark::after { content: ""; position: absolute; inset: 6px 6px 6px 6px; background: var(--bg); clip-path: polygon(0 0, 50% 100%, 100% 0, 78% 0, 50% 58%, 22% 0); }
+.seg { position: relative; display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--s1); }
+.seg button { position: relative; z-index: 1; border: 0; background: none; padding: 8px 20px; font-size: 14px; font-weight: 600; border-radius: 999px; cursor: pointer; color: var(--mute); transition: color .2s; }
+.seg button[aria-selected="true"] { color: var(--bg); }
+.seg-pill { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px; background: var(--white); transition: transform .35s cubic-bezier(.3, .8, .2, 1), width .35s cubic-bezier(.3, .8, .2, 1); }
+
+/* botões */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line-2); background: var(--s2); color: var(--text); padding: 13px 22px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s, border-color .15s, transform .15s; }
+.btn:hover { background: var(--s3); border-color: #4a4a4a; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--white); color: var(--bg); border-color: var(--white); }
+.btn.primary:hover { background: #e4e4e4; border-color: #e4e4e4; }
+.btn[disabled] { opacity: .4; pointer-events: none; }
+.btn.sm { padding: 9px 16px; font-size: 14px; }
+
+/* início */
+.hero { position: relative; padding-block: 96px 56px; text-align: left; --mx: 70%; --my: 30%; }
+.hero::before { content: ""; position: absolute; inset: -40px -16px 0; background-image: radial-gradient(rgba(255,255,255,.14) 1px, transparent 1.4px); background-size: 26px 26px; -webkit-mask-image: radial-gradient(420px circle at var(--mx) var(--my), #000, transparent 70%); mask-image: radial-gradient(420px circle at var(--mx) var(--my), #000, transparent 70%); pointer-events: none; }
+.hero > * { position: relative; }
+.hero h1 { font-size: clamp(44px, 8.5vw, 104px); font-weight: 800; margin-top: 18px; }
+.hero h1 .ghost { color: transparent; -webkit-text-stroke: 1.5px rgba(255,255,255,.5); }
+.hero .lead { max-width: 560px; color: var(--mute); font-size: clamp(17px, 2.2vw, 20px); margin-top: 24px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 40px; }
+.badge { font-family: var(--mono); font-size: 12px; color: var(--mute); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+
+section.block { padding-block: 64px; }
+.sec-head { max-width: 620px; margin-bottom: 32px; }
+.sec-head h2 { font-size: clamp(28px, 4.4vw, 44px); font-weight: 700; margin-top: 12px; }
+.sec-head p { color: var(--mute); margin-top: 14px; }
+
+.demo { border: 1px solid var(--line); border-radius: 22px; background: var(--s1); padding: 22px; }
+.demo-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
+.demo-head h2 { font-size: clamp(24px, 3.4vw, 34px); font-weight: 700; }
+.demo-head p { color: var(--mute); font-size: 15px; margin-top: 8px; max-width: 460px; }
+.pick { display: flex; gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.pick button { border: 0; background: none; padding: 8px 14px; border-radius: 8px; font-family: var(--mono); font-size: 13px; cursor: pointer; color: var(--mute); }
+.pick button[aria-pressed="true"] { background: var(--white); color: var(--bg); font-weight: 500; }
+.lane { position: relative; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); margin-top: 10px; overflow: hidden; }
+.lane canvas { display: block; width: 100%; height: 140px; }
+.lane .tag { position: absolute; left: 14px; top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+.lane .tag b { color: var(--text); font-weight: 500; }
+.lane.hi { border-color: var(--line-2); }
+.lane .cnt { position: absolute; right: 14px; top: 10px; font-family: var(--mono); font-size: 11px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.lane .cnt b { color: var(--text); font-weight: 500; }
+.demo-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick button.wide { padding: 8px 12px; }
+.pick button.soft { opacity: .45; }
+.pick button.soft:hover, .pick button.soft:focus-visible { opacity: .8; }
+.pick button.soft[aria-pressed="true"] { opacity: .7; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 16px; font-size: 13px; color: var(--mute); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; box-sizing: border-box; }
+.legend .f { background: var(--text); }
+.legend .r { border: 1.5px solid var(--text); }
+.legend .g { border: 1.5px dashed var(--mute); }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.step { border: 1px solid var(--line); border-radius: 18px; background: var(--s1); padding: 24px; min-width: 0; transition: border-color .2s, transform .2s; }
+.step:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.step .n { font-family: var(--mono); font-size: 12px; color: var(--mute); }
+.step h3 { font-size: 22px; font-weight: 700; margin-top: 28px; }
+.step p { color: var(--mute); font-size: 15px; margin-top: 10px; }
+
+.faq { display: grid; gap: 8px; max-width: 760px; }
+details { border: 1px solid var(--line); border-radius: 14px; background: var(--s1); }
+summary { cursor: pointer; list-style: none; padding: 18px 22px; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--mono); color: var(--mute); transition: transform .2s; }
+details[open] summary::after { transform: rotate(45deg); }
+details p { padding: 0 22px 20px; color: var(--mute); font-size: 15px; }
+
+/* converter */
+.conv-head { padding-block: 64px 28px; }
+.conv-head h1 { font-size: clamp(34px, 6vw, 60px); font-weight: 800; }
+.conv-head p { color: var(--mute); margin-top: 14px; max-width: 600px; }
+.banner { border: 1px solid var(--line-2); border-left: 3px solid var(--err); background: var(--s1); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 15px; display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; }
+.banner.info { border-left-color: var(--white); }
+.banner button { background: none; border: 0; color: var(--mute); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+.drop { border: 1.5px dashed var(--line-2); border-radius: 24px; background: var(--s1); padding: 72px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s, transform .2s; }
+.drop { position: relative; }
+.drop input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.drop:focus-within { border-color: var(--white); }
+.drop:hover, .drop.over { border-color: var(--white); background: var(--s2); }
+.drop.over { transform: scale(1.01); }
+.drop-ico { width: 56px; height: 56px; margin: 0 auto 20px; border-radius: 16px; border: 1px solid var(--line-2); display: grid; place-items: center; background: var(--bg); }
+.drop-t { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.drop-s { color: var(--mute); font-size: 14px; margin-top: 8px; }
+.drop[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.compat { margin: 14px 0 0; font-size: 12px; color: var(--mute); text-align: center; }
+.compat b { color: var(--text); font-weight: 500; }
+
+.stage { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.panel { margin: 0; min-width: 0; }
+.panel figcaption { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 10px; font-size: 14px; color: var(--mute); }
+.panel figcaption b { font-family: var(--mono); font-weight: 500; color: var(--text); font-size: 13px; }
+.frame { position: relative; width: 100%; aspect-ratio: var(--ar, 16 / 9); max-height: min(68vh, 620px); background: #000; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; }
+.frame video, .frame canvas { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+.frame .ph { place-self: center; color: var(--dim); font-size: 14px; text-align: center; padding: 24px; max-width: 280px; }
+.frame.live { border-color: var(--line-2); }
+
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 0; }
+.fact { border: 1px solid var(--line); border-radius: 12px; background: var(--s1); padding: 12px 14px; min-width: 0; }
+.fact dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.fact dd { margin: 4px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.ctl { margin-top: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--s1); padding: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
+.ctl .grow { flex: 1 1 260px; min-width: 0; }
+.opts { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; flex: 1 1 280px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch span { width: 40px; height: 24px; border-radius: 999px; background: var(--s3); border: 1px solid var(--line-2); position: relative; transition: background .2s; flex: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--mute); transition: transform .2s, background .2s; }
+.switch input:checked + span { background: var(--white); }
+.switch input:checked + span::after { transform: translateX(16px); background: var(--bg); }
+.switch input:focus-visible + span { outline: 2px solid var(--white); outline-offset: 3px; }
+.q { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--bg); }
+.q button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-size: 13px; cursor: pointer; color: var(--mute); }
+.q button[aria-pressed="true"] { background: var(--s3); color: var(--text); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-left: auto; }
+
+.bar { height: 8px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--white); border-radius: 999px; transition: width .2s linear; }
+.run-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.run-top b { font-size: 28px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.run-top span { color: var(--mute); font-size: 14px; }
+.run-meta { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 12px; color: var(--mute); font-size: 13px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.done-t { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.done-s { color: var(--mute); font-size: 14px; margin-top: 4px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--white); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 50; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* anúncio */
+.ad { margin-top: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--s1); padding: 18px; }
+.ad-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: baseline; margin-bottom: 12px; }
+.ad-state { font-size: 14px; color: var(--mute); }
+.ad-state.ok { color: var(--ok); }
+.ad-slot { position: relative; min-height: 180px; border: 1px dashed var(--line-2); border-radius: 14px; background: var(--bg); display: grid; place-items: center; overflow: hidden; text-align: center; padding: 18px; }
+.ad-empty { color: var(--dim); font-size: 14px; }
+.ad-load { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--white); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ad-demo { display: grid; gap: 8px; max-width: 420px; }
+.ad-demo b { font-size: 18px; letter-spacing: -0.02em; }
+.ad-demo span { color: var(--mute); font-size: 13px; }
+.ad-demo .tagad { justify-self: center; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); border: 1px solid var(--line-2); border-radius: 6px; padding: 2px 8px; }
+.ad-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 14px; }
+.ad-foot .bar { flex: 1 1 200px; }
+footer { margin-top: 56px; border-top: 1px solid var(--line); padding-block: 28px 40px; color: var(--mute); font-size: 13px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+
+@media (max-width: 860px) {
+  .steps { grid-template-columns: 1fr; }
+  .facts { grid-template-columns: repeat(2, 1fr); }
+  .stage { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .hero { padding-block: 56px 32px; }
+  .seg button { padding: 8px 14px; }
+  .logo .dim { display: none; }
+  .actions { margin-left: 0; width: 100%; }
+  .actions .btn { flex: 1; }
+  .drop { padding: 48px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="logo" href="#inicio" data-go="inicio"><span class="logo-mark"></span>vexa<span class="dim">method</span></a>
+    <nav class="seg" id="seg" aria-label="Seções do site">
+      <span class="seg-pill" id="pill"></span>
+      <button type="button" data-go="inicio" aria-selected="true">Início</button>
+      <button type="button" data-go="converter" aria-selected="false">Converter</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ INÍCIO ============ -->
+<div data-view="inicio" id="view-inicio">
+  <div class="hero" id="hero">
+    <span class="label">Interpolação de quadros no navegador</span>
+    <h1>Seu vídeo em <span class="ghost">120</span> FPS.</h1>
+    <p class="lead">Envie um vídeo de até 2 minutos com 60 FPS ou menos. Antes de cada conversão há um anúncio rápido. O Vexa Method cria os quadros que faltam entre os originais e entrega um MP4 mais fluido, sem enviar nada para a nuvem.</p>
+    <div class="cta">
+      <button type="button" class="btn primary" data-go="converter">Converter um vídeo</button>
+      <a class="btn" href="#como">Como funciona</a>
+    </div>
+    <div class="badges">
+      <span class="badge">até 2 min</span>
+      <span class="badge">MP4 · MOV · WebM</span>
+      <span class="badge">áudio preservado</span>
+      <span class="badge">100% local</span>
+    </div>
+  </div>
+
+  <section class="block" style="padding-top:24px">
+    <div class="demo" id="demo">
+      <div class="demo-head">
+        <div>
+          <h2>Veja o que muda</h2>
+          <p>A bola de cada faixa se move na taxa real: 24, 30 ou 60 FPS no original, 120 FPS no Vexa. Cada ponto é um quadro do mesmo movimento. O Vexa mantém os quadros originais e cria os que faltam entre eles, então o objeto deixa de saltar.</p>
+        </div>
+        <div class="demo-tools">
+          <div class="pick" role="group" aria-label="FPS do vídeo original">
+            <button type="button" data-fps="24" aria-pressed="false">24 FPS</button>
+            <button type="button" data-fps="30" aria-pressed="false">30 FPS</button>
+            <button type="button" data-fps="60" aria-pressed="true">60 FPS</button>
+          </div>
+          <div class="pick" role="group" aria-label="Velocidade da animação">
+            <button type="button" class="wide" data-speed="1" aria-pressed="true">Normal</button>
+            <button type="button" class="wide" data-speed="0.2" aria-pressed="false">Lenta</button>
+            <button type="button" class="wide" data-speed="0.04" aria-pressed="false">Muito lenta</button>
+            <button type="button" class="wide soft" id="btnPause" aria-pressed="false">Pausar</button>
+          </div>
+        </div>
+      </div>
+      <div class="lane"><span class="tag">Original · <b id="lf">60</b> FPS</span><span class="cnt">quadro <b id="n1">0</b> de <b id="t1">60</b> por segundo</span><canvas id="c1" aria-label="Movimento do vídeo original, com saltos entre quadros"></canvas></div>
+      <div class="lane hi"><span class="tag">Vexa · <b>120</b> FPS</span><span class="cnt">quadro <b id="n2">0</b> de <b id="t2">120</b> por segundo</span><canvas id="c2" aria-label="Movimento em 120 FPS, mais suave"></canvas></div>
+      <div class="legend"><span><i class="f"></i>quadro original</span><span><i class="r"></i>quadro novo criado pelo Vexa</span><span><i class="g"></i>posição real do objeto</span></div>
+    </div>
+  </section>
+
+  <section class="block" id="como">
+    <div class="sec-head">
+      <span class="label">Como funciona</span>
+      <h2>Três passos, tudo no seu aparelho.</h2>
+      <p>O arquivo nunca sai do navegador. A conversão usa a sua placa de vídeo e o codificador do próprio navegador.</p>
+    </div>
+    <div class="steps">
+      <article class="step"><span class="n">01</span><h3>Envie o vídeo</h3><p>Arraste um MP4, MOV ou WebM de até 2 minutos. O Vexa detecta os FPS e a resolução sozinho.</p></article>
+      <article class="step"><span class="n">02</span><h3>Quadros novos</h3><p>Medimos o movimento entre quadros vizinhos e criamos um quadro intermediário na posição certa de cada objeto.</p></article>
+      <article class="step"><span class="n">03</span><h3>Baixe em 120 FPS</h3><p>O resultado sai como MP4 com o áudio original, pronto para editar, postar ou guardar.</p></article>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="sec-head"><span class="label">Dúvidas</span><h2>O que vale saber antes.</h2></div>
+    <div class="faq">
+      <details open><summary>Meu vídeo é enviado para algum servidor?</summary><p>Não. O arquivo é lido, processado e gerado dentro do seu navegador. Se você fechar a aba, nada fica guardado.</p></details>
+      <details><summary>Quanto tempo leva?</summary><p>O vídeo é lido em velocidade reduzida para que nenhum quadro seja perdido. Cada quadro novo é calculado com cuidado, então conte de 2 a 5 vezes a duração do vídeo, mais para vídeos de 60 FPS. Um clipe de 30 s costuma levar de 1 a 3 minutos. Mantenha a aba aberta e visível durante a conversão.</p></details>
+      <details><summary>A qualidade é igual a gravar em 120 FPS?</summary><p>Não. Os quadros novos são estimados a partir do movimento. Em cenas normais o resultado fica bem mais suave, mas movimentos muito rápidos, fumaça, água e objetos que aparecem de repente podem gerar pequenos defeitos.</p></details>
+      <details><summary>Qual navegador devo usar?</summary><p>Chrome ou Edge atualizados, no computador. O site precisa de WebCodecs e WebGL2.</p></details>
+      <details><summary>E se o vídeo já tiver mais de 60 FPS?</summary><p>Vídeos com 110 FPS ou mais já estão na taxa de destino e são recusados. Entre 60 e 110 FPS a conversão funciona, mas o ganho é menor.</p></details>
+    </div>
+  </section>
+</div>
+
+<!-- ============ CONVERTER ============ -->
+<div data-view="converter" id="view-converter" hidden>
+  <div class="conv-head">
+    <span class="label">Converter</span>
+    <h1 style="margin-top:12px">Leve seu vídeo a 120 FPS.</h1>
+    <p>MP4, MOV ou WebM com até 2 minutos e 60 FPS ou menos. O processamento acontece neste navegador.</p>
+  </div>
+
+  <div id="banner" class="banner" role="alert" hidden><span id="bannerText"></span><button type="button" id="bannerX" aria-label="Fechar aviso">&times;</button></div>
+
+  <div id="drop" class="drop">
+    <input id="file" type="file" accept="video/*" aria-label="Escolher um vídeo">
+    <div class="drop-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
+    <p class="drop-t">Solte o vídeo aqui</p>
+    <p class="drop-s">ou clique para escolher · até 2 min · 60 FPS ou menos</p>
+  </div>
+
+  <p class="compat mono" id="compat" aria-live="polite"></p>
+
+  <div id="work" hidden>
+    <div class="stage">
+      <figure class="panel">
+        <figcaption><span>Original</span><b id="lblIn">—</b></figcaption>
+        <div class="frame" id="frameIn"><video id="vSrc" muted playsinline preload="auto"></video></div>
+      </figure>
+      <figure class="panel">
+        <figcaption><span>Vexa Method</span><b>120 FPS</b></figcaption>
+        <div class="frame" id="frameOut">
+          <div class="ph" id="ph">A prévia dos quadros novos aparece aqui durante a conversão.</div>
+          <canvas id="cv" hidden></canvas>
+          <video id="vOut" controls loop playsinline hidden></video>
+        </div>
+      </figure>
+    </div>
+
+    <dl class="facts">
+      <div class="fact"><dt>Resolução</dt><dd id="fRes">—</dd></div>
+      <div class="fact"><dt>Duração</dt><dd id="fDur">—</dd></div>
+      <div class="fact"><dt>FPS original</dt><dd id="fFps">analisando…</dd></div>
+      <div class="fact"><dt>Saída</dt><dd id="fOut">—</dd></div>
+    </dl>
+
+    <div class="ctl" id="ctlReady">
+      <div class="opts">
+        <label class="switch"><input type="checkbox" id="optAudio" checked><span></span>Manter o áudio</label>
+        <label class="switch"><input type="checkbox" id="optSharp" checked><span></span>Nitidez leve</label>
+        <div class="q" role="group" aria-label="Qualidade da saída">
+          <button type="button" data-q="1" aria-pressed="true">Alta</button>
+          <button type="button" data-q="1.7" aria-pressed="false">Máxima</button>
+        </div>
+        <span class="label" id="eta"></span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btnSwap">Trocar vídeo</button>
+        <button type="button" class="btn primary" id="btnGo" disabled>Converter para 120 FPS</button>
+      </div>
+    </div>
+
+    <section class="ad" id="adBox" aria-label="Anúncio">
+      <div class="ad-head"><span class="label">Anúncio</span><span class="ad-state" id="adState" aria-live="polite">Assista ao anúncio para liberar a conversão deste vídeo.</span></div>
+      <div class="ad-slot" id="adSlot"><span class="ad-empty">O anúncio aparece aqui depois que você clicar em "Carregar anúncio".</span></div>
+      <div class="ad-foot">
+        <div class="bar" role="progressbar" aria-label="Progresso do anúncio" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="adBarWrap"><i id="adBar"></i></div>
+        <button type="button" class="btn" id="btnAd">Carregar anúncio</button>
+      </div>
+    </section>
+
+    <div class="ctl" id="ctlRun" hidden style="display:block">
+      <div class="run-top"><b id="pct">0%</b><span id="status" aria-live="polite">Preparando…</span></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="barWrap"><i id="bar"></i></div>
+      <div class="run-meta"><span id="mFrames">0 quadros</span><span id="mElapsed">0:00 decorridos</span><span id="mLeft">restante —</span></div>
+      <div class="run-meta" style="margin-top:14px"><span>Mantenha esta aba aberta e visível até terminar.</span></div>
+      <div style="margin-top:16px"><button type="button" class="btn sm" id="btnCancel">Cancelar</button></div>
+    </div>
+
+    <div class="ctl" id="ctlDone" hidden>
+      <div class="grow">
+        <p class="done-t">Pronto. Seu vídeo está em 120 FPS.</p>
+        <p class="done-s" id="doneInfo"></p>
+        <p class="done-s" id="dlNote" hidden></p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btnAgain">Converter outro</button>
+        <button type="button" class="btn primary" id="btnDl">Baixar MP4</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer class="wrap">
+  <span>Vexa Method · interpolação de quadros local</span>
+  <span class="mono">WebCodecs · WebGL2</span>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="vendor/mp4-muxer.min.js"></script>
+<script>
+(function () {
+'use strict';
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+var reduce = false;
+try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+/* ---------- roteamento por abas ---------- */
+var views = Array.prototype.slice.call(document.querySelectorAll('[data-view]'));
+var tabs = Array.prototype.slice.call(document.querySelectorAll('.seg button'));
+var pill = $('#pill');
+function movePill() {
+  var a = tabs.filter(function (b) { return b.getAttribute('aria-selected') === 'true'; })[0] || tabs[0];
+  pill.style.width = a.offsetWidth + 'px';
+  pill.style.transform = 'translateX(' + a.offsetLeft + 'px)';
+}
+function go(name, push) {
+  if (name !== 'inicio' && name !== 'converter') name = 'inicio';
+  views.forEach(function (v) { v.hidden = v.dataset.view !== name; });
+  tabs.forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.go === name)); });
+  movePill();
+  if (push !== false) { try { location.hash = name; } catch (e) {} }
+  window.scrollTo(0, 0);
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-go]');
+  if (t) { e.preventDefault(); go(t.dataset.go); }
+});
+window.addEventListener('hashchange', function () {
+  var h = location.hash.slice(1);
+  if (h === 'inicio' || h === 'converter') go(h, false);
+});
+window.addEventListener('resize', movePill);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(movePill);
+go(location.hash.slice(1) === 'converter' ? 'converter' : 'inicio', false);
+
+/* ---------- hero: ponto de luz acompanha o ponteiro ---------- */
+var hero = $('#hero');
+hero.addEventListener('pointermove', function (e) {
+  var r = hero.getBoundingClientRect();
+  hero.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+  hero.style.setProperty('--my', (e.clientY - r.top) + 'px');
+});
+
+/* ---------- demonstração de quadros ---------- */
+var demoFps = 60, demoSpeed = 1, demoPaused = reduce, demoTime = 0.9, demoLast = 0;
+var c1 = $('#c1'), c2 = $('#c2');
+var css = getComputedStyle(document.documentElement);
+var COL_TEXT = css.getPropertyValue('--text').trim() || '#f4f4f4';
+var COL_LINE = css.getPropertyValue('--line-2').trim() || '#363636';
+var COL_MUTE = css.getPropertyValue('--mute').trim() || '#8f8f8f';
+var CYC = 2.6;
+function pressOne(b) {
+  /* só os botões de escolha (FPS ou velocidade); o botão de pausar tem estado próprio */
+  Array.prototype.forEach.call(b.parentNode.querySelectorAll('button[data-fps], button[data-speed]'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+}
+Array.prototype.forEach.call(document.querySelectorAll('.pick button[data-fps]'), function (b) {
+  b.addEventListener('click', function () { demoFps = +b.dataset.fps; $('#lf').textContent = demoFps; pressOne(b); redrawDemo(); });
+});
+var btnPause = $('#btnPause');
+function syncPause() { btnPause.textContent = demoPaused ? 'Continuar' : 'Pausar'; btnPause.setAttribute('aria-pressed', String(demoPaused)); }
+btnPause.addEventListener('click', function () { demoPaused = !demoPaused; syncPause(); });
+syncPause();
+Array.prototype.forEach.call(document.querySelectorAll('.pick button[data-speed]'), function (b) {
+  b.addEventListener('click', function () { demoSpeed = +b.dataset.speed; pressOne(b); });
+});
+
+function fitCanvas(c) {
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  var w = c.clientWidth, h = c.clientHeight;
+  if (!w || !h) return null;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  var ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx: ctx, w: w, h: h };
+}
+function pathX(t) { return 0.5 - 0.5 * Math.cos(2 * Math.PI * t / CYC); }
+/* fps: taxa da faixa; vexa: marca quadros novos (os que não existem no vídeo original) */
+function drawLane(c, fps, now, vexa) {
+  var cnt = { k: Math.floor((((now % 1) + 1) % 1) * fps) + 1, n: fps };   /* quadro dentro do segundo atual */
+  var f = fitCanvas(c); if (!f) return cnt;
+  var ctx = f.ctx, w = f.w, h = f.h, padX = 30, mid = h * 0.6, amp = h * 0.18;
+  var X = function (t) { return padX + pathX(t) * (w - padX * 2); };
+  var Y = function (t) { return mid + amp * Math.sin(pathX(t) * Math.PI * 3); };
+  ctx.clearRect(0, 0, w, h);
+  /* trajeto */
+  ctx.strokeStyle = COL_LINE; ctx.lineWidth = 1; ctx.globalAlpha = 0.55; ctx.beginPath();
+  for (var i = 0; i <= 220; i++) { var p = i / 220, x = padX + p * (w - padX * 2), y = mid + amp * Math.sin(p * Math.PI * 3); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+  ctx.stroke(); ctx.globalAlpha = 1;
+  /* posição real do objeto */
+  ctx.strokeStyle = COL_MUTE; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
+  ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(X(now), Y(now), 14, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  /* quadros recentes, que vão sumindo */
+  var span = 0.5, n1 = Math.floor(now * fps), n0 = Math.floor((now - span) * fps);
+  var stepOrig = Math.round(120 / demoFps);
+  for (var n = n0; n <= n1; n++) {
+    var tt = n / fps; if (tt < 0) continue;
+    var age = (now - tt) / span, newest = n === n1;
+    var isNew = vexa && (n % stepOrig !== 0);
+    var a = newest ? 1 : Math.max(0.12, 0.85 * (1 - age));
+    ctx.globalAlpha = a; ctx.lineWidth = 1.6; ctx.strokeStyle = COL_TEXT; ctx.fillStyle = COL_TEXT;
+    var r = newest ? 4.5 : 2.6;
+    ctx.beginPath(); ctx.arc(X(tt), Y(tt), r, 0, Math.PI * 2);
+    if (isNew && !newest) { ctx.stroke(); } else { ctx.fill(); }
+    if (newest && isNew) {
+      ctx.globalAlpha = 0.55 * (1 - ((now * fps) % 1));
+      ctx.beginPath(); ctx.arc(X(tt), Y(tt), 7 + 8 * ((now * fps) % 1), 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  /* o objeto em si: só muda de posição a cada quadro, na taxa real da faixa */
+  var tq = Math.max(0, n1) / fps;
+  ctx.fillStyle = COL_TEXT; ctx.strokeStyle = COL_TEXT;
+  ctx.beginPath(); ctx.arc(X(tq), Y(tq), 7, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.3; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(X(tq), Y(tq), 10, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 1;
+  return cnt;
+}
+function redrawDemo() {
+  var a = drawLane(c1, demoFps, demoTime, false), b = drawLane(c2, 120, demoTime, true);
+  $('#n1').textContent = a.k; $('#t1').textContent = a.n;
+  $('#n2').textContent = b.k; $('#t2').textContent = b.n;
+}
+function demoLoop(ts) {
+  var dt = Math.min(0.1, Math.max(0, (ts - demoLast) / 1000)); demoLast = ts;
+  if (!demoPaused) demoTime += dt * demoSpeed;
+  if (!$('#view-inicio').hidden) redrawDemo();
+  requestAnimationFrame(demoLoop);
+}
+demoLast = performance.now();
+requestAnimationFrame(demoLoop);
+window.addEventListener('resize', redrawDemo);
+
+/* ============================================================
+   CONVERSOR
+   ============================================================ */
+var el = {
+  drop: $('#drop'), file: $('#file'), work: $('#work'),
+  banner: $('#banner'), bannerText: $('#bannerText'),
+  vSrc: $('#vSrc'), vOut: $('#vOut'), cv: $('#cv'), ph: $('#ph'),
+  frameIn: $('#frameIn'), frameOut: $('#frameOut'), lblIn: $('#lblIn'),
+  fRes: $('#fRes'), fDur: $('#fDur'), fFps: $('#fFps'), fOut: $('#fOut'),
+  ctlReady: $('#ctlReady'), ctlRun: $('#ctlRun'), ctlDone: $('#ctlDone'),
+  btnGo: $('#btnGo'), btnSwap: $('#btnSwap'), btnCancel: $('#btnCancel'), btnAgain: $('#btnAgain'), btnDl: $('#btnDl'),
+  optAudio: $('#optAudio'), optSharp: $('#optSharp'), eta: $('#eta'),
+  pct: $('#pct'), status: $('#status'), bar: $('#bar'), barWrap: $('#barWrap'),
+  mFrames: $('#mFrames'), mElapsed: $('#mElapsed'), mLeft: $('#mLeft'),
+  doneInfo: $('#doneInfo'), dlNote: $('#dlNote'), toast: $('#toast')
+};
+var adEl = null;
+var S = { adOk: false, fpsOk: false, file: null, url: null, w: 0, h: 0, dur: 0, fps: 30, quality: 1, busy: false, cancel: false, out: null };
+var dl = null;
+if (window.claude && window.claude.use) {
+  window.claude.use('downloads').then(function (m) { dl = m; }).catch(function () { dl = null; });
+}
+
+function fmtTime(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function fmtSize(b) { return b >= 1e9 ? (b / 1e9).toFixed(2) + ' GB' : (b / 1e6).toFixed(1) + ' MB'; }
+function fmtFps(f) { return (Math.round(f * 100) / 100).toString().replace('.', ','); }
+var toastTimer = 0;
+function toast(msg) { el.toast.textContent = msg; el.toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.toast.classList.remove('on'); }, 2600); }
+function banner(msg) { el.bannerText.textContent = msg; el.banner.hidden = false; }
+function clearBanner() { el.banner.hidden = true; }
+$('#bannerX').addEventListener('click', clearBanner);
+
+function waitEvent(node, name, timeout, soft) {
+  return new Promise(function (resolve, reject) {
+    var done = false, tm = 0;
+    function cleanup() { node.removeEventListener(name, ok); node.removeEventListener('error', bad); clearTimeout(tm); }
+    function ok() { if (done) return; done = true; cleanup(); resolve(); }
+    function bad() { if (done) return; done = true; cleanup(); reject(new Error('media error')); }
+    node.addEventListener(name, ok); node.addEventListener('error', bad);
+    if (timeout) tm = setTimeout(function () { if (done) return; done = true; cleanup(); if (soft) resolve(); else reject(new Error('timeout')); }, timeout);
+  });
+}
+
+var supported = ('VideoEncoder' in window) && ('VideoFrame' in window) && ('requestVideoFrameCallback' in HTMLVideoElement.prototype) && (typeof Mp4Muxer !== 'undefined');
+if (!supported) {
+  banner('Este navegador não tem os recursos necessários (WebCodecs). Abra o Vexa Method no Chrome ou no Edge atualizado, no computador.');
+  el.drop.setAttribute('aria-disabled', 'true'); el.file.disabled = true;
+}
+
+/* ---------- escolha do arquivo ---------- */
+el.file.addEventListener('change', function () { var f = el.file.files && el.file.files[0]; el.file.value = ''; if (f) loadFile(f); });
+['dragenter', 'dragover'].forEach(function (n) { el.drop.addEventListener(n, function (e) { e.preventDefault(); el.drop.classList.add('over'); }); });
+['dragleave', 'drop'].forEach(function (n) { el.drop.addEventListener(n, function (e) { e.preventDefault(); el.drop.classList.remove('over'); }); });
+el.drop.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && supported) loadFile(f); });
+window.addEventListener('dragover', function (e) { e.preventDefault(); });
+window.addEventListener('drop', function (e) { e.preventDefault(); });
+
+Array.prototype.forEach.call(document.querySelectorAll('.q button'), function (b) {
+  b.addEventListener('click', function () {
+    S.quality = +b.dataset.q;
+    Array.prototype.forEach.call(document.querySelectorAll('.q button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+  });
+});
+
+function snapFps(f) {
+  var c = [15, 23.976, 24, 25, 29.97, 30, 48, 50, 59.94, 60, 72, 90, 100, 119.88, 120];
+  var best = c[0], err = 1e9;
+  c.forEach(function (x) { var e = Math.abs(f - x) / x; if (e < err) { err = e; best = x; } });
+  return err < 0.04 ? best : Math.round(f * 10) / 10;
+}
+function detectFps(v) {
+  return new Promise(function (resolve) {
+    var times = [], done = false;
+    function finish() {
+      if (done) return; done = true;
+      try { v.pause(); } catch (e) {}
+      if (times.length < 6) return resolve(null);
+      var d = [];
+      for (var i = 1; i < times.length; i++) { var dt = times[i] - times[i - 1]; if (dt > 0.0005) d.push(dt); }
+      if (!d.length) return resolve(null);
+      d.sort(function (a, b) { return a - b; });
+      resolve(snapFps(1 / d[Math.floor(d.length * 0.25)]));
+    }
+    function cb(now, md) {
+      times.push(md.mediaTime);
+      if (times.length >= 45) finish(); else v.requestVideoFrameCallback(cb);
+    }
+    v.requestVideoFrameCallback(cb);
+    v.playbackRate = 1;
+    var p = v.play();
+    if (p && p.catch) p.catch(finish);
+    setTimeout(finish, 3200);
+  });
+}
+async function seekStart(v) {
+  if (v.currentTime === 0 && !v.seeking) return;
+  v.currentTime = 0;
+  await waitEvent(v, 'seeked', 3000, true);
+}
+function outSize() {
+  var sc = Math.min(1, 1920 / Math.max(S.w, S.h), 1080 / Math.min(S.w, S.h));
+  var W = Math.max(2, Math.round(S.w * sc / 2) * 2), H = Math.max(2, Math.round(S.h * sc / 2) * 2);
+  return { W: W, H: H };
+}
+function playbackRateFor(fps) { return Math.max(0.25, Math.min(1, 30 / fps)); }
+
+function setAspect() {
+  var ar = S.w + ' / ' + S.h;
+  el.frameIn.style.setProperty('--ar', ar);
+  el.frameOut.style.setProperty('--ar', ar);
+}
+function resetOutputPanel() {
+  el.cv.hidden = true; el.vOut.hidden = true; el.ph.hidden = false;
+  el.frameOut.classList.remove('live');
+  if (S.out) { try { URL.revokeObjectURL(S.out.url); } catch (e) {} S.out = null; }
+  try { el.vOut.pause(); el.vOut.removeAttribute('src'); el.vOut.load(); } catch (e) {}
+}
+function showState(name) {
+  if (adEl && adEl.box) adEl.box.hidden = name !== 'ready';
+  el.ctlReady.hidden = name !== 'ready';
+  el.ctlRun.hidden = name !== 'run';
+  el.ctlDone.hidden = name !== 'done';
+}
+function clearWork() {
+  S.file = null; S.cancel = false; S.fpsOk = false;
+  if (typeof adReset === 'function') adReset();
+  resetOutputPanel();
+  try { el.vSrc.pause(); } catch (e) {}
+  if (S.url) { try { URL.revokeObjectURL(S.url); } catch (e) {} S.url = null; }
+  el.vSrc.removeAttribute('src'); try { el.vSrc.load(); } catch (e) {}
+  el.vSrc.controls = false;
+  el.work.hidden = true; el.drop.hidden = false;
+}
+
+async function loadFile(file) {
+  if (S.busy) return;
+  clearBanner();
+  var okType = /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
+  if (!okType) { banner('Formato não suportado. Envie um vídeo MP4, MOV ou WebM.'); return; }
+  if (file.size > 900e6) { banner('O arquivo tem ' + fmtSize(file.size) + '. O limite é 900 MB.'); return; }
+  clearWork();
+  S.file = file;
+  S.url = URL.createObjectURL(file);
+  el.vSrc.muted = true; el.vSrc.src = S.url;
+  try { await waitEvent(el.vSrc, 'loadedmetadata', 20000); }
+  catch (e) { clearWork(); banner('Não consegui abrir este vídeo. O codec pode não ser suportado pelo navegador (por exemplo HEVC). Exporte em H.264 e tente de novo.'); return; }
+  S.w = el.vSrc.videoWidth; S.h = el.vSrc.videoHeight; S.dur = el.vSrc.duration;
+  if (!S.w || !S.h || !isFinite(S.dur)) { clearWork(); banner('Não consegui ler as dimensões deste vídeo.'); return; }
+  if (S.dur > 120.6) { var d = S.dur; clearWork(); banner('O vídeo tem ' + fmtTime(d) + '. O limite é de 2 minutos. Corte o vídeo e tente de novo.'); return; }
+
+  el.drop.hidden = true; el.work.hidden = false;
+  setAspect();
+  var o = outSize();
+  el.lblIn.textContent = file.name.length > 28 ? file.name.slice(0, 25) + '…' : file.name;
+  el.fRes.textContent = S.w + '×' + S.h;
+  el.fDur.textContent = fmtTime(S.dur);
+  el.fFps.textContent = 'analisando…';
+  el.fOut.textContent = o.W + '×' + o.H + ' · 120 FPS';
+  el.eta.textContent = '';
+  S.fpsOk = false; updateGo();
+  showState('ready');
+
+  var fps = null;
+  try { fps = await detectFps(el.vSrc); } catch (e) {}
+  if (S.file !== file) return;
+  try { await seekStart(el.vSrc); } catch (e) {}
+  var estimated = false;
+  if (!fps) { fps = 30; estimated = true; }
+  S.fps = fps;
+  el.fFps.textContent = (estimated ? '~' : '') + fmtFps(fps) + ' FPS' + (estimated ? ' (estimado)' : '');
+  el.vSrc.controls = true;
+  if (fps >= 110) {
+    banner('Este vídeo já tem ' + fmtFps(fps) + ' FPS. A conversão é para vídeos de 60 FPS ou menos.');
+    return;
+  }
+  if (fps > 61) banner('Este vídeo tem ' + fmtFps(fps) + ' FPS. A conversão funciona, mas o ganho de fluidez é menor.');
+  el.eta.textContent = 'Tempo estimado ~' + fmtTime(S.dur * fps * 0.08 + 3);
+  S.fpsOk = true; updateGo();
+}
+el.btnSwap.addEventListener('click', function () { if (!S.busy) { clearBanner(); clearWork(); } });
+el.btnAgain.addEventListener('click', function () { clearBanner(); clearWork(); });
+el.btnCancel.addEventListener('click', function () { S.cancel = true; el.status.textContent = 'Cancelando…'; });
+
+/* ---------- estimativa de movimento (blocos 8x8, busca +-8, refino sub-pixel) ---------- */
+/*ME-START*/
+/* Estimativa de movimento por blocos 8x8: preditores (vizinhos e quadro anterior), varredura grossa
+   quando o erro é alto, refino por passos de 2 e 1 pixel e ajuste sub-pixel.
+   st guarda o estado entre pares de quadros. out recebe os vetores normalizados (x/sw, y/sh). */
+function makeMotionState(sw, sh) {
+  var n = (sw / 8) * (sh / 8);
+  return { ix: new Int16Array(n), iy: new Int16Array(n), fx: new Float32Array(n), fy: new Float32Array(n), sad: new Float32Array(n), mx: new Float32Array(n), my: new Float32Array(n), has: false };
+}
+function estimateMotion(prev, cur, sw, sh, st, out) {
+  var BS = 8, R = 16, LAM = 3;
+  var bw = sw / BS, bh = sh / BS, n = bw * bh;
+  var ix = st.ix, iy = st.iy, fx = st.fx, fy = st.fy, sadB = st.sad, hadPrev = st.has;
+  var x0 = 0, y0 = 0, px = 0, py = 0, bestC = 0, bdx = 0, bdy = 0, tdx = 0, tdy = 0;
+  var madSum = 0;
+  function sad(xx, yy, dx, dy, lim) {
+    var s = 0;
+    for (var y = 0; y < BS; y++) {
+      var a = (yy + y) * sw + xx, b = (yy + y + dy) * sw + xx + dx;
+      for (var x = 0; x < BS; x++) { var d = prev[a + x] - cur[b + x]; s += d < 0 ? -d : d; }
+      if (s >= lim) return s;
+    }
+    return s;
+  }
+  function tryC(dx, dy) {
+    if (x0 + dx < 0 || y0 + dy < 0 || x0 + dx + BS > sw || y0 + dy + BS > sh) return;
+    var pen = LAM * ((dx > px ? dx - px : px - dx) + (dy > py ? dy - py : py - dy));
+    if (pen >= bestC) return;
+    var c = sad(x0, y0, dx, dy, bestC - pen) + pen;
+    if (c < bestC) { bestC = c; bdx = dx; bdy = dy; }
+  }
+  function med3(a, b, c) { return a > b ? (b > c ? b : (a > c ? c : a)) : (a > c ? a : (b > c ? c : b)); }
+  var NB = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+  for (var by = 0; by < bh; by++) {
+    for (var bx = 0; bx < bw; bx++) {
+      var i = by * bw + bx;
+      x0 = bx * BS; y0 = by * BS;
+      var lx = bx > 0 ? ix[i - 1] : 0, ly = bx > 0 ? iy[i - 1] : 0;
+      var ux = by > 0 ? ix[i - bw] : lx, uy = by > 0 ? iy[i - bw] : ly;
+      var rx = (by > 0 && bx < bw - 1) ? ix[i - bw + 1] : ux, ry = (by > 0 && bx < bw - 1) ? iy[i - bw + 1] : uy;
+      px = med3(lx, ux, rx); py = med3(ly, uy, ry);
+      tdx = hadPrev ? Math.round(fx[i]) : px; tdy = hadPrev ? Math.round(fy[i]) : py;   /* ainda é o vetor do par anterior */
+      bestC = 1e9; bdx = 0; bdy = 0;
+      tryC(0, 0); tryC(px, py); tryC(tdx, tdy); tryC(lx, ly); tryC(ux, uy); tryC(rx, ry);
+      for (var gy = -R; gy <= R; gy += 4) for (var gx = -R; gx <= R; gx += 4) tryC(gx, gy);
+      for (var s = 4; s >= 1; s = s >> 1) {
+        for (var it = 0; it < 8; it++) {
+          var cx = bdx, cy = bdy;
+          tryC(cx - s, cy); tryC(cx + s, cy); tryC(cx, cy - s); tryC(cx, cy + s);
+          tryC(cx - s, cy - s); tryC(cx + s, cy - s); tryC(cx - s, cy + s); tryC(cx + s, cy + s);
+          if (bdx === cx && bdy === cy) break;
+        }
+      }
+      var s0 = sad(x0, y0, bdx, bdy, 1e9);
+      var ox = bdx, oy = bdy, sm, sp, den, o;
+      if (x0 + bdx - 1 >= 0 && x0 + bdx + 1 + BS <= sw) {
+        sm = sad(x0, y0, bdx - 1, bdy, 1e9); sp = sad(x0, y0, bdx + 1, bdy, 1e9); den = sm - 2 * s0 + sp;
+        if (den > 0) { o = 0.5 * (sm - sp) / den; ox += o > 0.5 ? 0.5 : (o < -0.5 ? -0.5 : o); }
+      }
+      if (y0 + bdy - 1 >= 0 && y0 + bdy + 1 + BS <= sh) {
+        sm = sad(x0, y0, bdx, bdy - 1, 1e9); sp = sad(x0, y0, bdx, bdy + 1, 1e9); den = sm - 2 * s0 + sp;
+        if (den > 0) { o = 0.5 * (sm - sp) / den; oy += o > 0.5 ? 0.5 : (o < -0.5 ? -0.5 : o); }
+      }
+      /* ix/iy guardam o inteiro do bloco atual; fx/fy ainda têm o par anterior até o fim do laço */
+      st.mx[i] = ox; st.my[i] = oy;
+      ix[i] = bdx; iy[i] = bdy; sadB[i] = s0;
+      madSum += s0 / (BS * BS);
+    }
+  }
+  /* filtro de mediana 3x3 só onde o casamento é ruim; onde casa bem mantém o vetor próprio */
+  var mx = st.mx, my = st.my, GOOD = 3 * BS * BS;
+  var va = new Float32Array(9), vb = new Float32Array(9);
+  for (var y2 = 0; y2 < bh; y2++) {
+    for (var x2 = 0; x2 < bw; x2++) {
+      var k = y2 * bw + x2, rvx = mx[k], rvy = my[k];
+      if (sadB[k] > GOOD) {
+        var c = 0;
+        for (var j = -1; j <= 1; j++) {
+          var yy = y2 + j < 0 ? 0 : (y2 + j >= bh ? bh - 1 : y2 + j);
+          for (var l = -1; l <= 1; l++) { var xx = x2 + l < 0 ? 0 : (x2 + l >= bw ? bw - 1 : x2 + l); va[c] = mx[yy * bw + xx]; vb[c] = my[yy * bw + xx]; c++; }
+        }
+        for (var a1 = 1; a1 < 9; a1++) {
+          var t1 = va[a1], t2 = vb[a1], q1 = a1 - 1, q2 = a1 - 1;
+          while (q1 >= 0 && va[q1] > t1) { va[q1 + 1] = va[q1]; q1--; } va[q1 + 1] = t1;
+          while (q2 >= 0 && vb[q2] > t2) { vb[q2 + 1] = vb[q2]; q2--; } vb[q2 + 1] = t2;
+        }
+        rvx = va[4]; rvy = vb[4];
+      }
+      out[2 * k] = rvx / sw; out[2 * k + 1] = rvy / sh;
+      fx[k] = rvx; fy[k] = rvy;
+    }
+  }
+  st.has = true;
+  return madSum / n;
+}
+/*ME-END*/
+
+/* ---------- WebGL2: interpolação com compensação de movimento ---------- */
+var VS = '#version 300 es\nin vec2 p;out vec2 uv;void main(){uv=p*0.5+0.5;gl_Position=vec4(p,0.0,1.0);}';
+var FS = [
+  '#version 300 es',
+  'precision highp float;',
+  'in vec2 uv; out vec4 o;',
+  'uniform sampler2D A; uniform sampler2D B; uniform sampler2D V;',
+  'uniform float t; uniform float cut; uniform float sharp;',
+  'uniform vec2 tx; uniform vec2 bs;',
+  'vec2 gv; float gw; float gk;',
+  'vec3 sa(vec2 p){ return texture(A, p).rgb; }',
+  'vec3 sb(vec2 p){ return texture(B, p).rgb; }',
+  'float cost(vec2 q, vec2 v){ return dot(abs(sa(q - t * v) - sb(q + (1.0 - t) * v)), vec3(0.3333)); }',
+  'vec3 f(vec2 p){',
+  '  vec3 ia = mix(sa(p - t * gv), sb(p + (1.0 - t) * gv), gw);',
+  '  vec3 bc = (t < 0.5) ? sa(p) : sb(p);',
+  '  return mix(ia, bc, gk);',
+  '}',
+  'void main(){',
+  '  vec2 q = vec2(uv.x, 1.0 - uv.y);',
+  '  gv = vec2(0.0); gw = 0.0; gk = 1.0;',
+  '  if (t >= 0.001 && cut < 0.5) {',
+  '    vec2 v0 = texture(V, q).rg;',
+  '    vec2 v1 = texture(V, q + vec2(bs.x, 0.0)).rg;',
+  '    vec2 v2 = texture(V, q - vec2(bs.x, 0.0)).rg;',
+  '    vec2 v3 = texture(V, q + vec2(0.0, bs.y)).rg;',
+  '    vec2 v4 = texture(V, q - vec2(0.0, bs.y)).rg;',
+  '    float eb = cost(q, v0); float best = eb * 0.85; gv = v0;',
+  '    float e1 = cost(q, v1); if (e1 < best) { best = e1; eb = e1; gv = v1; }',
+  '    float e2 = cost(q, v2); if (e2 < best) { best = e2; eb = e2; gv = v2; }',
+  '    float e3 = cost(q, v3); if (e3 < best) { best = e3; eb = e3; gv = v3; }',
+  '    float e4 = cost(q, v4); if (e4 < best) { best = e4; eb = e4; gv = v4; }',
+  '    float ez = cost(q, vec2(0.0)); if (ez < best) { best = ez; eb = ez; gv = vec2(0.0); }',
+  '    gw = smoothstep(0.2, 0.8, t);',
+  '    gk = smoothstep(0.07, 0.24, eb);',
+  '  }',
+  '  vec3 c = f(q);',
+  '  vec3 n1 = f(q + vec2(tx.x, 0.0)); vec3 n2 = f(q - vec2(tx.x, 0.0));',
+  '  vec3 n3 = f(q + vec2(0.0, tx.y)); vec3 n4 = f(q - vec2(0.0, tx.y));',
+  '  vec3 bl = (n1 + n2 + n3 + n4) * 0.25;',
+  '  vec3 lo = min(min(n1, n2), min(min(n3, n4), c));',
+  '  vec3 hi = max(max(n1, n2), max(max(n3, n4), c));',
+  '  vec3 s = clamp(c + sharp * (c - bl), lo - 0.03, hi + 0.03);',
+  '  o = vec4(clamp(s, 0.0, 1.0), 1.0);',
+  '}'
+].join('\n');
+
+/* shader simples, usado só se o navegador recusar o completo */
+var FS_BASIC = '#version 300 es\nprecision highp float;in vec2 uv;out vec4 o;' +
+  'uniform sampler2D A;uniform sampler2D B;uniform sampler2D V;uniform float t;uniform float cut;' +
+  'void main(){vec2 q=vec2(uv.x,1.0-uv.y);vec4 a0=texture(A,q);vec4 b0=texture(B,q);vec4 base=(t<0.5)?a0:b0;' +
+  'if(t<0.001){o=vec4(a0.rgb,1.0);return;}if(cut>0.5){o=vec4(base.rgb,1.0);return;}' +
+  'vec2 v=texture(V,q).rg;vec4 wa=texture(A,q-t*v);vec4 wb=texture(B,q+(1.0-t)*v);vec3 w=mix(wa.rgb,wb.rgb,t);' +
+  'float e=dot(abs(wa.rgb-wb.rgb),vec3(0.3333));float k=smoothstep(0.08,0.28,e);o=vec4(mix(w,base.rgb,k),1.0);}';
+
+function createGL(canvas, full) {
+  var gl = canvas.getContext('webgl2', { alpha: false, antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+  if (!gl) throw new Error('WebGL2 não está disponível neste navegador.');
+  function sh(type, src) {
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('Shader: ' + gl.getShaderInfoLog(s));
+    return s;
+  }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, full ? FS : FS_BASIC));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('Programa gráfico: ' + gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, 'p');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  function mk() {
+    var t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  }
+  var r = { gl: gl, texA: mk(), texB: mk(), texV: mk(), uT: gl.getUniformLocation(prog, 't'), uCut: gl.getUniformLocation(prog, 'cut'),
+    uSharp: gl.getUniformLocation(prog, 'sharp'), uTx: gl.getUniformLocation(prog, 'tx'), uBs: gl.getUniformLocation(prog, 'bs') };
+  if (full) {
+    gl.bindTexture(gl.TEXTURE_2D, r.texV);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  }
+  gl.uniform1i(gl.getUniformLocation(prog, 'A'), 0);
+  gl.uniform1i(gl.getUniformLocation(prog, 'B'), 1);
+  gl.uniform1i(gl.getUniformLocation(prog, 'V'), 2);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  return r;
+}
+
+/* ---------- codificadores ---------- */
+async function pickVideoEncoder(W, H, bitrate) {
+  var cands = [
+    { codec: 'avc1.640034', mux: 'avc', name: 'H.264' }, { codec: 'avc1.640033', mux: 'avc', name: 'H.264' }, { codec: 'avc1.64002A', mux: 'avc', name: 'H.264' },
+    { codec: 'vp09.00.51.08', mux: 'vp9', name: 'VP9' }, { codec: 'av01.0.12M.08', mux: 'av1', name: 'AV1' }
+  ];
+  for (var i = 0; i < cands.length; i++) {
+    var cfg = { codec: cands[i].codec, width: W, height: H, bitrate: bitrate, framerate: 120, latencyMode: 'quality' };
+    try { var s = await VideoEncoder.isConfigSupported(cfg); if (s && s.supported) return { cfg: cfg, mux: cands[i].mux, name: cands[i].name }; } catch (e) {}
+  }
+  return null;
+}
+async function pickAudioEncoder(sampleRate, channels) {
+  var cands = [{ codec: 'mp4a.40.2', mux: 'aac' }, { codec: 'opus', mux: 'opus' }];
+  for (var i = 0; i < cands.length; i++) {
+    var cfg = { codec: cands[i].codec, sampleRate: sampleRate, numberOfChannels: channels, bitrate: 192000 };
+    try { var s = await AudioEncoder.isConfigSupported(cfg); if (s && s.supported) return { cfg: cfg, mux: cands[i].mux }; } catch (e) {}
+  }
+  return null;
+}
+async function readAudio(file) {
+  try {
+    var ab = await file.arrayBuffer();
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    var ctx = new Ctx({ sampleRate: 48000 });
+    var buf = await ctx.decodeAudioData(ab);
+    try { ctx.close(); } catch (e) {}
+    return buf;
+  } catch (e) { return null; }
+}
+async function encodeAudio(buf, enc, isCancelled) {
+  var ch = Math.min(2, buf.numberOfChannels), sr = buf.sampleRate, N = buf.length, step = Math.floor(sr / 2);
+  for (var off = 0; off < N; off += step) {
+    if (isCancelled()) return;
+    var n = Math.min(step, N - off);
+    var data = new Float32Array(n * ch);
+    for (var c = 0; c < ch; c++) data.set(buf.getChannelData(c).subarray(off, off + n), c * n);
+    var ad = new AudioData({ format: 'f32-planar', sampleRate: sr, numberOfFrames: n, numberOfChannels: ch, timestamp: Math.round(off / sr * 1e6), data: data });
+    enc.encode(ad); ad.close();
+    if (enc.encodeQueueSize > 24) await sleep(4);
+  }
+}
+
+/* ---------- conversão ---------- */
+var uiLast = 0;
+function setProgress(p, frames, t0wall, force) {
+  var now = performance.now();
+  if (!force && now - uiLast < 150) return;
+  uiLast = now;
+  p = Math.max(0, Math.min(1, p));
+  var el_s = (now - t0wall) / 1000;
+  el.pct.textContent = Math.floor(p * 100) + '%';
+  el.bar.style.width = (p * 100) + '%';
+  el.barWrap.setAttribute('aria-valuenow', String(Math.floor(p * 100)));
+  el.mFrames.textContent = frames.toLocaleString('pt-BR') + ' quadros';
+  el.mElapsed.textContent = fmtTime(el_s) + ' decorridos';
+  el.mLeft.textContent = p > 0.03 ? 'restante ~' + fmtTime(el_s / p - el_s) : 'restante —';
+}
+
+async function run() {
+  if (S.busy || !S.file || !S.adOk) return;
+  S.busy = true; S.cancel = false; clearBanner();
+  var v = el.vSrc;
+  v.controls = false;
+  resetOutputPanel();
+  el.ph.hidden = true; el.cv.hidden = false; el.frameOut.classList.add('live');
+  showState('run');
+  el.status.textContent = 'Preparando…';
+  uiLast = 0;
+  var t0wall = performance.now();
+  setProgress(0, 0, t0wall, true);
+
+  var size = outSize(), W = size.W, H = size.H;
+  var LONG = 480, sw, sh;
+  if (W >= H) { sw = LONG; sh = Math.max(16, Math.round(LONG * H / W / 8) * 8); }
+  else { sh = LONG; sw = Math.max(16, Math.round(LONG * W / H / 8) * 8); }
+  var bw = sw / 8, bh = sh / 8;
+  var sharpOn = el.optSharp.checked;
+  var bitrate = Math.round(Math.max(10e6, Math.min(W * H * 120 * 0.1 * S.quality, 3.6e9 / Math.max(10, S.dur), 120e6)));
+  var rate = playbackRateFor(S.fps);
+  var queue = [], ended = false, fatal = null, lastWall = performance.now(), lastT = -1;
+  var venc = null, aenc = null, glr = null, muxer = null, target = null;
+  var cancelled = function () { return S.cancel; };
+  var onEnded = function () { setTimeout(function () { ended = true; }, 250); };
+  var onErr = function () { fatal = new Error('O navegador parou de ler o vídeo.'); };
+  var onVis = function () { if (document.hidden) { try { v.pause(); } catch (e) {} } else { lastWall = performance.now(); } };
+  var outIdx = 0;
+
+  try {
+    try { glr = createGL(el.cv, true); }
+    catch (e1) { glr = createGL(el.cv, false); toast('Usando o modo gráfico simples neste navegador.'); }
+    el.cv.width = W; el.cv.height = H;
+    var gl = glr.gl;
+    gl.uniform2f(glr.uTx, 1 / W, 1 / H);
+    gl.uniform2f(glr.uBs, 1 / bw, 1 / bh);
+    var mst = makeMotionState(sw, sh);
+
+    var pick = await pickVideoEncoder(W, H, bitrate);
+    if (!pick) throw new Error('Este navegador não consegue codificar vídeo em 120 FPS nesta resolução. Tente o Chrome ou o Edge no computador.');
+
+    var audioBuf = null, audioPick = null;
+    if (el.optAudio.checked && ('AudioEncoder' in window) && ('AudioData' in window)) {
+      el.status.textContent = 'Lendo o áudio…';
+      audioBuf = await readAudio(S.file);
+      if (audioBuf) { audioPick = await pickAudioEncoder(audioBuf.sampleRate, Math.min(2, audioBuf.numberOfChannels)); if (!audioPick) audioBuf = null; }
+      if (!audioBuf) toast('Nenhuma faixa de áudio utilizável. O vídeo sairá sem som.');
+    }
+    if (S.cancel) throw { cancelled: true };
+
+    target = new Mp4Muxer.ArrayBufferTarget();
+    var muxOpts = {
+      target: target, fastStart: 'in-memory', firstTimestampBehavior: 'offset',
+      video: { codec: pick.mux, width: W, height: H, frameRate: 120 }
+    };
+    if (audioBuf) muxOpts.audio = { codec: audioPick.mux, numberOfChannels: audioPick.cfg.numberOfChannels, sampleRate: audioPick.cfg.sampleRate };
+    muxer = new Mp4Muxer.Muxer(muxOpts);
+
+    venc = new VideoEncoder({
+      output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); },
+      error: function (e) { fatal = e; }
+    });
+    venc.configure(pick.cfg);
+
+    /* quadro pequeno em tons de cinza para estimar movimento */
+    var sc = document.createElement('canvas'); sc.width = sw; sc.height = sh;
+    var sctx = sc.getContext('2d', { willReadFrequently: true });
+    try { sctx.imageSmoothingQuality = 'high'; } catch (e) {}
+    function lumaOf(vf) {
+      sctx.drawImage(vf, 0, 0, sw, sh);
+      var d = sctx.getImageData(0, 0, sw, sh).data, L = new Uint8Array(sw * sh);
+      for (var i = 0, j = 0; j < L.length; i += 4, j++) L[j] = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+      return L;
+    }
+    var mv = new Float32Array(bw * bh * 2);
+    function upload(tex, vf) {
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, vf);
+    }
+    function uploadMV() {
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, glr.texV);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, bw, bh, 0, gl.RG, gl.FLOAT, mv);
+    }
+    async function emit(alpha, cut) {
+      gl.viewport(0, 0, W, H);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, glr.texA);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, glr.texB);
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, glr.texV);
+      gl.uniform1f(glr.uT, alpha); gl.uniform1f(glr.uCut, cut ? 1 : 0);
+      gl.uniform1f(glr.uSharp, !sharpOn ? 0 : ((alpha < 0.001 || cut) ? 0.2 : 0.4));
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      var f = new VideoFrame(el.cv, { timestamp: Math.round(outIdx * 1e6 / 120), duration: Math.round(1e6 / 120) });
+      venc.encode(f, { keyFrame: outIdx % 120 === 0 });
+      f.close(); outIdx++;
+      if (venc.encodeQueueSize > 16) { while (venc.encodeQueueSize > 6) { if (S.cancel || fatal) return; await sleep(2); } }
+    }
+
+    /* captura dos quadros do vídeo de origem */
+    el.status.textContent = 'Convertendo…';
+    await seekStart(v);
+    v.addEventListener('ended', onEnded); v.addEventListener('error', onErr);
+    document.addEventListener('visibilitychange', onVis);
+    function onFrame(now, md) {
+      if (S.cancel || ended) return;
+      if (md.mediaTime > lastT + 1e-6) {
+        try {
+          var vf = new VideoFrame(v, { timestamp: Math.round(md.mediaTime * 1e6) });
+          queue.push({ vf: vf, t: md.mediaTime }); lastT = md.mediaTime; lastWall = performance.now();
+        } catch (e) { fatal = e; return; }
+      }
+      if (queue.length >= 6 && !v.paused) v.pause();
+      v.requestVideoFrameCallback(onFrame);
+    }
+    v.requestVideoFrameCallback(onFrame);
+    v.playbackRate = rate;
+    var pp = v.play(); if (pp && pp.catch) pp.catch(function (e) { fatal = new Error('O navegador não deixou o vídeo tocar para ser lido.'); });
+
+    var havePrev = false, prevT = 0, t0 = 0, prevLuma = null, k = 0, lastGap = 1 / S.fps;
+    var DT = 1 / 120, firstWait = performance.now();
+
+    while (true) {
+      if (S.cancel) throw { cancelled: true };
+      if (fatal) throw fatal;
+      if (v.paused && !v.ended && !ended && !document.hidden && queue.length <= 2) { var rp = v.play(); if (rp && rp.catch) rp.catch(function () {}); }
+      var item = queue.shift();
+      if (!item) {
+        if (ended) break;
+        if (performance.now() - lastWall > 15000 && !document.hidden) throw new Error('A leitura do vídeo travou. Tente de novo ou use outro arquivo.');
+        await sleep(4); continue;
+      }
+
+      if (!havePrev) {
+        upload(glr.texA, item.vf);
+        prevLuma = lumaOf(item.vf);
+        prevT = item.t; t0 = item.t; havePrev = true;
+        item.vf.close();
+        continue;
+      }
+      /* texB (quadro atual) vira texA (anterior) */
+      var tmp = glr.texA; glr.texA = glr.texB; glr.texB = tmp;
+      upload(glr.texB, item.vf);
+      var curLuma = lumaOf(item.vf);
+      item.vf.close();
+      var mad = estimateMotion(prevLuma, curLuma, sw, sh, mst, mv);
+      uploadMV();
+      var gap = item.t - prevT;
+      var cut = mad > 22 || gap > 0.25;
+      while (true) {
+        var kT = t0 + k * DT;
+        if (kT >= item.t - 1e-4) break;
+        await emit(Math.max(0, Math.min(1, (kT - prevT) / gap)), cut);
+        if (S.cancel || fatal) break;
+        k++;
+      }
+      lastGap = gap > 0 && gap < 0.25 ? gap : lastGap;
+      prevLuma = curLuma; prevT = item.t;
+      setProgress((item.t - t0) / Math.max(0.1, S.dur - t0), outIdx, t0wall, false);
+      await sleep(0);
+    }
+    if (S.cancel) throw { cancelled: true };
+    if (fatal) throw fatal;
+    if (!havePrev || outIdx < 2) throw new Error('Não consegui ler quadros suficientes do vídeo.');
+    /* mantém o último quadro pela duração de um quadro original */
+    while (t0 + k * DT < prevT + lastGap - 1e-4) { await emit(1, true); k++; }
+
+    el.status.textContent = 'Finalizando o vídeo…';
+    setProgress(1, outIdx, t0wall, true);
+    await venc.flush(); venc.close(); venc = null;
+
+    if (audioBuf) {
+      el.status.textContent = 'Codificando o áudio…';
+      aenc = new AudioEncoder({ output: function (chunk, meta) { muxer.addAudioChunk(chunk, meta); }, error: function (e) { fatal = e; } });
+      aenc.configure(audioPick.cfg);
+      await encodeAudio(audioBuf, aenc, cancelled);
+      if (S.cancel) throw { cancelled: true };
+      await aenc.flush(); aenc.close(); aenc = null;
+      if (fatal) throw fatal;
+    }
+    muxer.finalize();
+    var blob = new Blob([target.buffer], { type: 'video/mp4' });
+    var base = S.file.name.replace(/\.[^.]+$/, '') || 'video';
+    S.out = { blob: blob, url: URL.createObjectURL(blob), name: base + '-120fps.mp4' };
+
+    el.cv.hidden = true; el.vOut.hidden = false; el.frameOut.classList.remove('live');
+    el.vOut.src = S.out.url;
+    el.doneInfo.textContent = W + '×' + H + ' · 120 FPS · ' + pick.name + ' · ' + fmtSize(blob.size) + (audioBuf ? ' · com áudio' : ' · sem áudio') + ' · ' + fmtTime((performance.now() - t0wall) / 1000) + ' de processamento';
+    el.dlNote.hidden = true;
+    showState('done');
+    v.controls = true;
+    adReset();
+  } catch (e) {
+    if (e && e.cancelled) {
+      toast('Conversão cancelada');
+    } else {
+      banner((e && e.message) ? 'Erro na conversão: ' + e.message : 'A conversão falhou. Tente de novo ou use outro vídeo.');
+    }
+    resetOutputPanel();
+    showState('ready');
+    v.controls = true;
+  } finally {
+    v.removeEventListener('ended', onEnded); v.removeEventListener('error', onErr);
+    document.removeEventListener('visibilitychange', onVis);
+    try { v.pause(); v.playbackRate = 1; } catch (e) {}
+    queue.forEach(function (it) { try { it.vf.close(); } catch (e) {} });
+    queue.length = 0;
+    try { if (venc && venc.state !== 'closed') venc.close(); } catch (e) {}
+    try { if (aenc && aenc.state !== 'closed') aenc.close(); } catch (e) {}
+    S.busy = false; S.cancel = false;
+  }
+}
+el.btnGo.addEventListener('click', function () { run(); });
+
+/* ---------- anúncio obrigatório antes de cada conversão ---------- */
+/* Para usar o Google AdSense de verdade: hospede o site no seu domínio, aprove-o no AdSense e preencha client e slot.
+   Nesta página publicada o script do Google é bloqueado, então o espaço mostra um anúncio de demonstração. */
+var ADS = { enabled: false, client: 'ca-pub-0000000000000000', slot: '0000000000', seconds: 10 };
+adEl = { box: $('#adBox'), slot: $('#adSlot'), state: $('#adState'), bar: $('#adBar'), barWrap: $('#adBarWrap'), btn: $('#btnAd') };
+var adTimer = 0, adLoading = false;
+function updateGo() { el.btnGo.disabled = !(S.fpsOk && S.adOk); }
+function adReset() {
+  clearInterval(adTimer); adTimer = 0; adLoading = false; S.adOk = false;
+  adEl.slot.innerHTML = '';
+  var empty = document.createElement('span'); empty.className = 'ad-empty';
+  empty.textContent = 'O anúncio aparece aqui depois que você clicar em "Carregar anúncio".';
+  adEl.slot.appendChild(empty);
+  adEl.bar.style.width = '0%'; adEl.barWrap.setAttribute('aria-valuenow', '0');
+  adEl.state.textContent = 'Assista ao anúncio para liberar a conversão deste vídeo.';
+  adEl.state.classList.remove('ok');
+  adEl.btn.disabled = false; adEl.btn.textContent = 'Carregar anúncio';
+  updateGo();
+}
+function adFinish() {
+  clearInterval(adTimer); adTimer = 0; S.adOk = true;
+  adEl.bar.style.width = '100%'; adEl.barWrap.setAttribute('aria-valuenow', '100');
+  adEl.state.textContent = 'Anúncio concluído. A conversão está liberada.';
+  adEl.state.classList.add('ok');
+  adEl.btn.disabled = true; adEl.btn.textContent = 'Anúncio concluído';
+  updateGo();
+}
+function adCountdown() {
+  var total = ADS.seconds, done = 0, last = performance.now();
+  adEl.btn.disabled = true;
+  adTimer = setInterval(function () {
+    var now = performance.now(), dt = (now - last) / 1000; last = now;
+    if (document.hidden) { adEl.state.textContent = 'Volte para esta aba para continuar o anúncio.'; return; }
+    done += dt;
+    var left = Math.max(0, Math.ceil(total - done));
+    adEl.bar.style.width = Math.min(100, done / total * 100) + '%';
+    adEl.barWrap.setAttribute('aria-valuenow', String(Math.floor(Math.min(100, done / total * 100))));
+    adEl.btn.textContent = 'Assistindo… ' + left + ' s';
+    adEl.state.textContent = 'Assista até o fim para liberar a conversão.';
+    if (done >= total) adFinish();
+  }, 100);
+}
+function adShowDemo() {
+  adEl.slot.innerHTML = '';
+  var d = document.createElement('div'); d.className = 'ad-demo';
+  var t = document.createElement('span'); t.className = 'tagad'; t.textContent = 'Anúncio · demonstração';
+  var b = document.createElement('b'); b.textContent = 'Seu anúncio do Google AdSense aparece aqui';
+  var s = document.createElement('span'); s.textContent = 'Este espaço usa o formato retangular padrão. Ao publicar no seu domínio com a conta do AdSense, o anúncio real ocupa este lugar.';
+  d.appendChild(t); d.appendChild(b); d.appendChild(s); adEl.slot.appendChild(d);
+}
+function adLoadReal() {
+  return new Promise(function (resolve, reject) {
+    var sc = document.createElement('script');
+    sc.async = true; sc.crossOrigin = 'anonymous';
+    sc.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(ADS.client);
+    var to = setTimeout(function () { reject(new Error('timeout')); }, 5000);
+    sc.onload = function () {
+      clearTimeout(to);
+      try {
+        adEl.slot.innerHTML = '';
+        var ins = document.createElement('ins'); ins.className = 'adsbygoogle'; ins.style.display = 'block'; ins.style.width = '100%';
+        ins.setAttribute('data-ad-client', ADS.client); ins.setAttribute('data-ad-slot', ADS.slot);
+        ins.setAttribute('data-ad-format', 'auto'); ins.setAttribute('data-full-width-responsive', 'true');
+        adEl.slot.appendChild(ins);
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        resolve();
+      } catch (e) { reject(e); }
+    };
+    sc.onerror = function () { clearTimeout(to); reject(new Error('blocked')); };
+    document.head.appendChild(sc);
+  });
+}
+adEl.btn.addEventListener('click', async function () {
+  if (adLoading || S.adOk || !S.file) return;
+  adLoading = true; adEl.btn.disabled = true; adEl.btn.textContent = 'Carregando…';
+  adEl.state.textContent = 'Carregando o anúncio…';
+  adEl.slot.innerHTML = ''; var sp = document.createElement('div'); sp.className = 'ad-load'; adEl.slot.appendChild(sp);
+  var real = false;
+  if (ADS.enabled) { try { await adLoadReal(); real = true; } catch (e) { real = false; } }
+  else { await sleep(700); }
+  if (!real) adShowDemo();
+  adLoading = false;
+  adCountdown();
+});
+adReset();
+
+
+/* ---------- verificação de compatibilidade do navegador ---------- */
+(async function checkSupport() {
+  var box = $('#compat');
+  var mark = function (ok) { return ok ? '✓' : '✗'; };
+  var gl2 = false;
+  try { gl2 = !!document.createElement('canvas').getContext('webgl2'); } catch (e) {}
+  var parts = ['WebCodecs ' + mark(supported), 'WebGL2 ' + mark(gl2)];
+  if (supported) {
+    var vp = null, ap = null;
+    try { vp = await pickVideoEncoder(1920, 1080, 20e6); } catch (e) {}
+    try { if ('AudioEncoder' in window) ap = await pickAudioEncoder(48000, 2); } catch (e) {}
+    parts.push('vídeo 1080p 120 FPS ' + mark(!!vp) + (vp ? ' ' + vp.name : ''));
+    parts.push('áudio ' + mark(!!ap));
+    if (!vp) {
+      banner('Este navegador não consegue codificar vídeo em 120 FPS. Use o Chrome ou o Edge atualizado, no computador.');
+      el.drop.setAttribute('aria-disabled', 'true'); el.file.disabled = true;
+    }
+  }
+  if (!gl2) {
+    banner('Este navegador não tem WebGL2, necessário para criar os quadros novos. Use o Chrome ou o Edge atualizado.');
+    el.drop.setAttribute('aria-disabled', 'true'); el.file.disabled = true;
+  }
+  box.textContent = 'Compatibilidade: ' + parts.join(' · ');
+})();
+
+el.btnDl.addEventListener('click', async function () {
+  if (!S.out) return;
+  if (!dl) {
+    /* fora do claude.ai: download comum do navegador */
+    var a = document.createElement('a');
+    a.href = S.out.url; a.download = S.out.name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { try { a.remove(); } catch (e) {} }, 500);
+    el.dlNote.hidden = false;
+    el.dlNote.textContent = 'Se o download não começar, use o menu do vídeo ao lado (três pontos) e escolha Fazer download.';
+    return;
+  }
+  try {
+    await dl.save({ filename: S.out.name, data: S.out.blob });
+    toast('Arquivo enviado para download');
+  } catch (e) {
+    if (e && e.code === 'declined') return;
+    if (e && e.code === 'too_large') { banner('O arquivo é grande demais para este destino. Use a qualidade Alta para gerar um arquivo menor.'); return; }
+    banner('Não foi possível baixar o arquivo agora. Tente de novo em instantes.');
+  }
+});
+})();
+</script>
+
+</body>
+</html>
